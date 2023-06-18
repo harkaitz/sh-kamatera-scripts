@@ -1,0 +1,19 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-ipaddr UUID|NAME
+#h:
+#h: Get server's first IP address.
+##:
+. kamatera-h-uuid
+kamatera_h_ipaddr() {
+    local JSON UUID
+    kamatera_h_uuid -q "${1}"
+    kamatera_h_rest -q service/server/"${UUID}"
+    echo "${JSON}" | jq -r '.networks[0].ips[0]'
+}
+if test @"$(basename "$0")" = @"kamatera-h-ipaddr";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_ipaddr "$@"; exit 0;;
+    esac
+fi

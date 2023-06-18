@@ -1,0 +1,25 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-rename [FROM [TO]]
+#h:
+#h: Rename a server's name.
+##:
+. kamatera-h-uuid
+kamatera_h_rename() {
+    local UUID
+    kamatera_h_uuid -q "${1}"
+    if test ! -n "${2}"; then
+        echo >&2 "error: Please specify a new name."
+        return 1
+    elif test ! "$(echo -n "${2}" | wc -c)" -gt 4; then
+        echo >&2 "error: The new name is too short."
+        return 1
+    fi
+    kamatera_h_rest -q service/server/"${UUID}"/rename -X PUT -d name="${2}"
+}
+if test @"$(basename "$0")" = @"kamatera-h-rename";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_rename "$@"; exit 0;;
+    esac
+fi

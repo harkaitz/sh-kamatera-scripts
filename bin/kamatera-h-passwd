@@ -1,0 +1,24 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-passwd MACHINE
+#h:
+#h: Change the password to $KAMATERA_PASSWORD to the root user in
+#h: the specified machine.
+#h:
+##:
+. kamatera-h-uuid
+kamatera_h_passwd() {
+    local UUID
+    if test ! -n "${KAMATERA_PASSWORD}"; then
+        echo >&2 "error: Please set KAMATERA_PASSWORD variable."
+        return 1
+    fi
+    kamatera_h_uuid -q "$1"
+    kamatera_h_rest -q "service/server/${UUID}/password" -X PUT -d password="${KAMATERA_PASSWORD}"
+}
+if test @"$(basename "$0")" = @"kamatera-h-passwd";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_passwd "$@"; exit 0;;
+    esac
+fi

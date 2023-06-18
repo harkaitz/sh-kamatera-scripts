@@ -1,0 +1,55 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-uuid NAME
+#h:
+#h: The the UUID of a server.
+##:
+. kamatera-h-rest
+. kamatera-h-ls
+kamatera_h_uuid() {
+    local OPTIND optopt opt_q=''
+    
+    ## Parse command line arguments.
+    while getopts "q" optopt; do
+        case $optopt in
+            q)  opt_q=y;;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+
+    ## Require argument.
+    if test ! -n "$1"; then
+        echo >&2
+        kamatera_h_ls >&2 || true
+        echo >&2
+        echo >&2 "error: Please specify an UUID or server name."
+        return 1
+    fi
+
+    ## Print UUID.
+    case "${1}" in
+        *-*-*-*-*)
+            UUID="${1}"
+            ;;
+        *)
+            kamatera_h_rest -q "service/servers"
+            UUID="$(echo "${JSON}" | jq -r '.[] | select(.name=="'"${1}"'") | .id')"
+            if test ! -n "${UUID}"; then
+                echo >&2 "error: Machine '$1' not found."
+                return 1
+            fi
+            ;;
+    esac
+
+    ## Print without q.
+    if test ! -n "${opt_q}"; then
+        echo "${UUID}"
+    fi
+}
+if test @"$(basename "$0")" = @"kamatera-h-uuid";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_uuid "$@"; exit 0;;
+    esac
+fi

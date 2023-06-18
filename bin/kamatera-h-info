@@ -1,0 +1,19 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-info NAME|UUID
+#h:
+#h: Fetch server information.
+##:
+. kamatera-h-rest
+. kamatera-h-uuid
+kamatera_h_info() {
+    local JSON UUID
+    kamatera_h_uuid -q "${1}"
+    kamatera_h_rest service/server/"${UUID}"
+}
+if test @"$(basename "$0")" = @"kamatera-h-info";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_info "$@"; exit 0;;
+    esac
+fi

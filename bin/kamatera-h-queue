@@ -1,0 +1,14 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-queue : View the task queue.
+##:
+. kamatera-h-rest
+kamatera_h_queue() {
+    kamatera_h_rest service/queue
+}
+if test @"$(basename "$0")" = @"kamatera-h-queue";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_queue "$@"; exit 0;;
+    esac
+fi

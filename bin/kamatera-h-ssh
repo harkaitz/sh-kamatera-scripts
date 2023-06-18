@@ -1,0 +1,64 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-ssh [OPTS...] MACHINE|UUID
+#h:
+#h:    -i : Install public keys.
+#h:    -c : Print SSH configuration.
+##:
+. kamatera-h-info
+kamatera_h_ssh() {
+    local JSON UUID OPTIND optopt opt_i='' opt_c=''
+    ## Parse command line arguments.
+    while getopts "ic" optopt; do
+        case $optopt in
+            i)  opt_i=y;;
+            c)  opt_c=y;;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    kamatera_h_uuid -q "$1"
+    ## Install public keys.
+    if test -n "${opt_i}"; then
+        if test ! -n "${KAMATERA_PASSWORD}"; then
+            echo >&2 "error: Please set KAMATERA_PASSWORD variable."
+            return 1
+        fi
+        kamatera_h_rest -q service/server/"${UUID}"
+        local ipaddr="$(echo "${JSON}" | jq -r '.networks[0].ips[0]')"
+        SSHPASS="${KAMATERA_PASSWORD}" sshpass -e ssh-copy-id root@"${ipaddr}"
+    fi
+    if test -n "${opt_c}"; then
+        kamatera_h_rest -q service/server/"${UUID}"
+        local ipaddr="$(echo "${JSON}" | jq -r '.networks[0].ips[0]')"
+        sed 's/^|//' <<-EOF
+	|Host ${1}
+	|	HostName      ${ipaddr}
+	|	Port          22
+	|	User          root
+	|	IdentityFile  ${HOME}/.ssh/id_rsa
+	EOF
+    fi
+    
+}
+kamatera_h_check_programs() {
+    if ! which ssh >/dev/null 2>&1; then
+        echo >&2 "error: Please install OpenSSH."
+        return 1
+    fi
+    if ! which sshpass >/dev/null 2>&1; then
+        echo >&2 "error: Please install sshpass."
+        return 1
+    fi
+    
+}
+## -------------------------------------------------------------------
+kamatera_h_check_programs
+if test @"$(basename "$0")" = @"kamatera-h-ssh";then
+    case "${1}" in
+        ''|-h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)
+            kamatera_h_ssh "$@"; exit 0
+            ;;
+    esac
+fi

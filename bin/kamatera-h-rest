@@ -1,0 +1,70 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-rest -V | [-q] PATH
+##:
+kamatera_h_rest() {
+    local OPTIND optopt err opt_q='' opt_P=''
+    ## Parse command line options.
+    while getopts "Vq" optopt; do
+        case $optopt in
+            V)  kamatera_h_rest_show_variables; return 0;;
+            q)  opt_q=y;;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    if test ! -n "${1}"; then
+        echo >&2 "error: Please specify a path."
+        return 1
+    fi
+    
+    ## Write to standard output.
+    if test ! -n "${opt_q}"; then
+        kamatera_h_rest_STDOUT "$@"
+        return 0
+    fi
+
+    ## Parse JSON.
+    JSON="$(kamatera_h_rest_STDOUT "$@")"
+    if test ! -n "${JSON}"; then
+        echo >&2 "error: Empty response from kamatera."
+        return 1
+    fi
+    err="$(echo "${JSON}" | jq '.errors' 2>/dev/null || true)"
+    if test ! @"${err:-null}" = @"null"; then
+        echo >&2 "error: $(echo "${err}" | jq -r '.[0].info')"
+        return 1
+    fi
+}
+kamatera_h_rest_show_variables() {
+    cat <<-EOF
+	KAMATERA_API_CLIENT_ID : ${KAMATERA_API_CLIENT_ID}
+	KAMATERA_API_SECRET    : ${KAMATERA_API_SECRET}
+	EOF
+}
+kamatera_h_rest_STDOUT() {
+    local path="$1"
+    shift
+    curl -s                                           \
+         -H "AuthClientId: ${KAMATERA_API_CLIENT_ID}" \
+         -H "AuthSecret: ${KAMATERA_API_SECRET}"      \
+         "$@"                                         \
+         "https://console.kamatera.com/${path}"
+}
+kamatera_h_rest_check_programs() {
+    if ! which jq >/dev/null 2>&1; then
+        echo >&2 "error: Please install 'jq'."
+        return 1
+    fi
+    if ! which curl >/dev/null 2>&1; then
+        echo >&2 "error: Please install 'curl'."
+        return 1
+    fi
+}
+kamatera_h_rest_check_programs
+if test @"$(basename "$0")" = @"kamatera-h-rest";then
+    case "${1}" in
+        ''|-h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)            kamatera_h_rest "$@"; exit 0;;
+    esac
+fi

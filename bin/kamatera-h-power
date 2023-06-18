@@ -1,0 +1,50 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-power OPTS... MACHINE
+#h:
+#h: Check or change the power status of a machine.
+#h:
+#h:    -p : Power off machine.
+#h:    -r : Restart machine.
+#h:    -s : Start machine.
+#h:    -c : Print "on" or "off".
+#h:
+##:
+. kamatera-h-uuid
+kamatera_h_power() {
+    local OPTIND optopt ops= UUID
+    ## Parse command line arguments.
+    while getopts "prsc" optopt; do
+        ops="${ops}${optopt}"
+        case $optopt in
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    ## Get UUID.
+    kamatera_h_uuid -q "${1}"
+    ## Operations.
+    case "${ops}" in
+        *p*)
+            kamatera_h_rest -q service/server/"${UUID}"/power -X PUT -d power=off
+            ;;
+        *r*)
+            kamatera_h_rest -q service/server/"${UUID}"/power -X PUT -d power=restart
+            ;;
+        *s*)
+            kamatera_h_rest -q service/server/"${UUID}"/power -X PUT -d power=on
+            ;;
+        *c*|'')
+            kamatera_h_rest -q service/server/"${UUID}"
+            echo "${JSON}" | jq -r '.power'
+            ;;
+    esac
+    
+    
+}
+if test @"$(basename "$0")" = @"kamatera-h-power";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0" ;;
+        *)         kamatera_h_power "$@"; exit 0;;
+    esac
+fi

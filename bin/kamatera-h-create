@@ -1,0 +1,85 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-create [OPTIONS...]
+#h:
+#h: Create a new server in Kamatera Cloud.
+#h:
+#h:     -V         : Show configuration.
+#h:     -P s|l     : Set computing power.
+#h:     -n NAME    : Name for the new machine.
+#h:     -s SECRET  : Password for the new machine ($KAMATERA_PASSWORD).
+#h:     -i IMAGE|l : Specify an image.
+#h:
+##:
+. kamatera-h-create-options
+kamatera_h_create() {
+    local OPTIND optopt opt_V= name= image=
+    ## Parse command line arguments.
+    while getopts "VP:n:s:i:" optopt; do
+        case $optopt in
+            V)  opt_V=y;;
+            P)  kamatera_h_create_set_power "${OPTARG}";;
+            n)  name="${OPTARG}"   ;;
+            s)  local KAMATERA_PASSWORD="${OPTARG}" ;;
+            i)  image="${OPTARG}" ;;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    ## Show configuration.
+    if test -n "${opt_V}"; then
+        kamatera_h_create_show_variables
+        return 0
+    fi
+    ## List images and require one.
+    if test @"${image}" = @"l"; then
+        kamatera_h_create_options -l
+        return 0
+    elif test ! -n "${image}"; then
+        echo >&2 "error: Please specify an image name or ID."
+        return 1
+    fi
+    ## Require a name and password.
+    if test ! -n "${name}"; then
+        echo >&2 "error: Please specify a machine name."
+        return 1
+    elif test ! -n "${KAMATERA_PASSWORD}"; then
+        echo >&2 "error: Please set KAMATERA_PASSWORD environment variable."
+        return 1
+    fi
+    ## Create the new machine.
+    kamatera_h_rest -q \
+         "service/server" \
+         -X POST                                \
+         -d datacenter="${KAMATERA_DATACENTER}" \
+         -d billing="${KAMATERA_BILLING}"       \
+         -d managed="0" `: 40USD`               \
+         -d backup="0"  `: 3USD `               \
+         -D power="0"                           \
+         `: Name and password.`                 \
+         -d name="${name}"                      \
+         -d password="${KAMATERA_PASSWORD}"     \
+         `: System configuration.`              \
+         -d cpu="${KAMATERA_CPU}"               \
+         -d ram="${KAMATERA_RAM}"               \
+         -d disk_size_0="${KAMATERA_GBS}"       \
+         -d disk_src_0="${image}"               \
+         `: Networking.`                        \
+         -d network_name_0="wan"                \
+         -d traffic="${KAMATERA_TRAFFIC}"
+}
+
+kamatera_h_create_set_power() {
+    case "${1}" in
+        s) KAMATERA_CPU="1A" KAMATERA_RAM="2048" KAMATERA_GBS="20" ;;
+        l) KAMATERA_CPU="2B" KAMATERA_RAM="4096" KAMATERA_GBS="30" ;;
+        *) echo >&2 "Supported sizes: s, l"; return 1;;
+    esac
+}
+## -------------------------------------------------------------------
+if test @"$(basename "$0")" = @"kamatera-h-create";then
+    case "${1}" in
+        ''|-h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0" ;;
+        *)            kamatera_h_create "$@"; exit 0;;
+    esac
+fi

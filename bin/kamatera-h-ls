@@ -1,0 +1,18 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-ls
+#h:
+#h: List servers. (ID, DATACENTER, NAME, POWER).
+##:
+. kamatera-h-rest
+kamatera_h_ls() {
+    kamatera_h_rest "service/servers" | jq -r '
+    .[] | .id + " " + .datacenter + " " + .name + " " + .power
+    ' | xargs -n 4 printf '%s %-10s %-20s %s\n'
+}
+if test @"$(basename "$0")" = @"kamatera-h-ls";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_ls "$@"; exit 0;;
+    esac
+fi

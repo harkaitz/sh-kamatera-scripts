@@ -1,0 +1,28 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-billing [-m MONTH] [-y YEAR]
+#h:
+#h: Fetch billing information for the month.
+##:
+. kamatera-h-rest
+kamatera_h_billing() {
+    local OPTIND optopt year="$(date '+%Y')" month="$(date '+%m')"
+    ## Parse command line options.
+    while getopts "m:y:" optopt; do
+        case $optopt in
+            m)  month="$(printf '%02i' "${OPTARG}")" ;;
+            y)  year="${OPTARG}"  ;;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    ## Download.
+    kamatera_h_rest "service/billing/${year}/${month}/self"
+    
+}
+if test @"$(basename "$0")" = @"kamatera-h-billing";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0";;
+        *)         kamatera_h_billing "$@"; exit 0;;
+    esac
+fi
