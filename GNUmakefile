@@ -1,12 +1,11 @@
-DESTDIR =
-PREFIX  =/usr/local
-
-
+PROJECT=sh-kamatera-scripts
+VERSION=1.0.0
+PREFIX=/usr/local
 all:
 clean:
 install:
-update:
-## -- install-sh --
+
+## -- BLOCK:sh --
 install: install-sh
 install-sh:
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
@@ -24,10 +23,13 @@ install-sh:
 	cp bin/kamatera-h-ls    $(DESTDIR)$(PREFIX)/bin
 	cp bin/kamatera-h-uuid  $(DESTDIR)$(PREFIX)/bin
 	cp bin/kamatera-h-rest  $(DESTDIR)$(PREFIX)/bin
-## -- install-sh --
-## -- license --
+## -- BLOCK:sh --
+## -- BLOCK:license --
 install: install-license
-install-license: LICENSE
-	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/sh-kamatera-scripts
-	cp LICENSE $(DESTDIR)$(PREFIX)/share/doc/sh-kamatera-scripts
-## -- license --
+install-license: 
+	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/$(PROJECT)
+	cp LICENSE README.md $(DESTDIR)$(PREFIX)/share/doc/$(PROJECT)
+update: update-license
+update-license:
+	ssnip README.md
+## -- BLOCK:license --
