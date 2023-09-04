@@ -1,0 +1,15 @@
+#!/bin/sh -e
+##:
+#h: Usage: kamatera-h-dashboard
+#h:
+#h: Open kamatera dashboard in the browser.
+##:
+kamatera_h_dashboard() {
+    xdg-open "https://console.kamatera.com/servers/"
+}
+if test @"$(basename "$0")" = @"kamatera-h-dashboard";then
+    case "${1}" in
+        -h|--help) sed -n 's/^ *#h: \{0,1\}//p' "$0" ;;
+        *)         kamatera_h_dashboard "$@"; exit 0 ;;
+    esac
+fi
